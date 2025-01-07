@@ -3,6 +3,8 @@ A higher level python package that uses [`mdsthin`](https://github.com/MDSplus/m
 
 ## Usage:
 
+
+### No installation required
 You can download the read_mds.py file from mdsh5 directory and use it directly or import it in your python code as per your need. You'll need to install `h5py`, `PyYaml`, and [`mdsthin`](https://github.com/MDSplus/mdsthin). For your convinience, a conda environment is provided in this repository to install the required packages in a separate environment. To use:
 
 ```
@@ -10,12 +12,27 @@ conda env create -f conda_env.yml
 conda activate mdsh5
 ```
 
+### Installation
+If you plan to use this package often, you can install it locally using PyPi.
+```
+pip install mdsh5
+```
+This will also install a script `read_mds` in your `bin` that you can call as:
+```
+read_mds
+```
+No need to even write python and you can call this script from anywhere in your computer. Note that if you installed this package in a conda environment, the script would go to conda environment's bin directory which is typically present in `$HOME/anaconda3/envs/<env_name>/bin` and this might not be in your path by default.
+
 ## Purpose
 
 If you want to run custom analysis on your shot data from the device, it can become tedious to download data using existing tools. To this end, [`mdsthin`](https://github.com/MDSplus/mdsthin) now provides an excellent pythonic solution to download MDSPlus data
 from remote servers.
 
 This package is one level higher data management tool. It uses [`mdsthin`](https://github.com/MDSplus/mdsthin) to download data but provides a functionality to provide required shot numbers, tree names, and point names in an organized yaml format and creates a fast transversible data dictionary in HDF5 format. HDF5 is simple self-describing fiole format which is supported on multiple platforms and has well developed libraries for reading and writing in almost all programming languages. The msot important aspect is that when python opens an HDF5 file, it can navigate through the data dictionary and read only the required portion of the data file. Thus it requires much less RAM and even if the accumulated data is in GigaBytes, you can read small particular portions of it very fast.
+
+Additionally, if you use VSCode, I highly recomment installing the [H5Web extension](https://marketplace.visualstudio.com/items?itemName=h5web.vscode-h5web) which let's you quickly visualize the data stored in the HDF5 files created by this package.
+
+![KSTAR_data](H5WebExample.png)
 
 ## Documentation
 

@@ -1,0 +1,3 @@
+mdsh5.egg-info/*
+dist/*
+*.h5

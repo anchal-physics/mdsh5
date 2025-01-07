@@ -239,8 +239,7 @@ def get_args():
     args = parser.parse_args()
     return args
 
-
-if __name__ == '__main__':
+def read_mds_cli():
     args = get_args()
     data_dict = read_mds(shot_numbers=args.shot_numbers,
                          trees=args.trees,
@@ -252,3 +251,6 @@ if __name__ == '__main__':
                          reread_data=args.reread_data,
                          verbose=args.verbose,
                          config=args.config,)
+
+if __name__ == '__main__':
+    read_mds_cli()

@@ -1,0 +1,31 @@
+[project]
+name = "mdsh5"
+description = "A higher level python package that uses mdsthin to read MDSPlus data and store it in hdf5 formate for easy caching, viewing, distribution, and analysis."
+version = "0.0.1"
+license = {file = "LICENSE"}
+readme = "README.md"
+authors = [
+  {name = "Anchal Gupta", email = "anchal.physics@gmail.com"},
+]
+requires-python = ">= 3.7"
+dependencies = [
+  "h5py >= 3",
+  "mdsthin",
+  "PyYaml", 
+]
+
+keywords = ["MDSPLus", "HDF5"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Build Tools",
+  "Programming Language :: Python :: 3",
+]
+
+[project.gui-scripts]
+read_mds = "mdsh5:read_mds_cli"
+
+[project.urls]
+"Homepage" = "https://github.com/anchal-physics/mdsh5"
+"Bug Reports" = "https://github.com/anchal-physics/mdsh5/issues"
+"Source" = "https://github.com/anchal-physics/mdsh5"
