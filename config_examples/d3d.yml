@@ -1,0 +1,19 @@
+
+# See kstar.yml for more possible configurations
+shot_numbers:
+  - 199346
+
+trees:
+  D3D: 
+    - PTDATA("IP")      # To add PTDATA pointnames, wrap it in PTDATA("") or add them under a new tree called PTDATA
+    - TOP.NEUTRALS.GASFLOW.GASD.FLOW
+    - TOP.NEUTRALS.GASFLOW.GASD.FLOW.LABEL
+
+out_filename: D3D_data.h5   # File to write data output to
+reread_data: False            # Optional, if true, will re read data that is already present in hdf5 file
+
+# Unless your username on the machine matches the username in MDS server, you should add
+# the username at the start of the server address as shown below.
+# It is assumed that you have setup any required tunneling in your ~/.ssh/config
+server: guptaa@atlas.gat.com
+verbose: true

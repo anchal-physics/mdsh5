@@ -1,0 +1,44 @@
+shot_numbers: # Multiple shot numbers
+  - 36158
+  - 36159
+  - 36160
+  - 36161
+
+trees: # Different trees can be listed like this
+  EFIT01:           # Note that adding a \ is not required
+    - RVSOUT        # Outer strike point R coordinate
+    - ZVSOUT        # Outer strike point Z coordinate
+    - RVSIN         # Outer strike point R coordinate
+    - ZVSIN         # Outer strike point Z coordinate
+    - RXPT1         # X point R coordinate
+    - ZXPT1         # X point Z coordinate
+  KSTAR:
+    - NE_TCI01 # Line average density from Two-Color Interferometer
+    - RC02              # Plasma current from rogowski
+    - LV23              # Loop voltage
+    - IRVB1_PRAD        # Total radiated power measured by IRVB
+    - pol_vb60:foo      # W-I Line
+    - pol_vb59:foo      # C-III Line
+
+# Optional:
+# Can be used to reduce the amount of data handled or make all data with same time axis
+resample:                     # Can provide same info as list [-0.1, 20, 0.001]
+  start: -0.1
+  stop: 20
+  increment: 0.001
+
+# Optional:
+# To provide different dim0 scaling to ensure all output data is in same units.
+# This is important if resample argument is used.
+rescale:                      
+  EFIT01: 1e-3                # EFIT01 writes dim0 in ms
+  KSTAR: 1                    # KSTAR stores dim0 in s
+
+out_filename: KSTAR_data.h5   # File to write data output to
+reread_data: False            # Optional, if true, will re read data that is already present in hdf5 file
+
+# Unless your username on the machine matches the username in MDS server, you should add
+# the username at the start of the server address as shown below.
+# It is assumed that you have setup any required tunneling in your ~/.ssh/config
+server: guptaa@203.230.126.231:8005
+verbose: true

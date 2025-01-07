@@ -1,0 +1,10 @@
+name: mdsh5
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - h5py
+  - python
+  - pyyaml
+  - pip:
+      - mdsthin
