@@ -246,7 +246,7 @@ def get_args():
 def read_mds_cli():
     args = get_args()
     if args.configTemplate:
-        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        root_dir = os.path.dirname(os.path.abspath(__file__))
         src_dir = os.path.join(root_dir, 'config_examples')
         dest = os.getcwd()
         shutil.copy(os.path.join(src_dir, 'd3d.yml'), dest)
