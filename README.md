@@ -66,7 +66,12 @@ options:
   --reread_data         Will overwrite on existing data for corresponding data entries in out_file. Default behavior is to skip readingpointnames whose data is present.
   -v, --verbose         Print verbose messages
   -c, --config CONFIG   Configuration file containing shot_numbers, trees, point_names, server, and other settings. If provided, corresponding command line arguments are ignored.
+  --configTemplate      If provided, configuration templates will be copied to current directory. All
+                        other arguments will be ignored.
+
 ```
+Note that you can get configuration templates by using --configTemplate option and learn more by reading those files.
+
 For queries, contanct Anchal Gupta (guptaa@fusion.gat.com).
 
 ## Required ssh configurations

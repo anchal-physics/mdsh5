@@ -5,7 +5,8 @@ import argparse
 import numpy as np
 import h5py
 import yaml
-
+import shutil
+import os
 
 """
 read_mdsplus_channel(shot_numbers=31779, trees='KSTAR',
@@ -236,21 +237,31 @@ def get_args():
                         help='Configuration file containing shot_numbers, trees, '
                              'point_names, server, and other settings. If provided, '
                              'corresponding command line arguments are ignored.')
+    parser.add_argument('--configTemplate', action='store_true',
+                        help='If provided, configuration templates will be copied to '
+                             'current directory. All other arguments will be ignored.')
     args = parser.parse_args()
     return args
 
 def read_mds_cli():
     args = get_args()
-    data_dict = read_mds(shot_numbers=args.shot_numbers,
-                         trees=args.trees,
-                         point_names=args.point_names,
-                         server=args.server,
-                         resample=args.resample,
-                         rescale=args.rescale,
-                         out_filename=args.out_filename,
-                         reread_data=args.reread_data,
-                         verbose=args.verbose,
-                         config=args.config,)
+    if args.configTemplate:
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        src_dir = os.path.join(root_dir, 'config_examples')
+        dest = os.getcwd()
+        shutil.copy(os.path.join(src_dir, 'd3d.yml'), dest)
+        shutil.copy(os.path.join(src_dir, 'kstar.yml'), dest)
+        return 0
+    read_mds(shot_numbers=args.shot_numbers,
+             trees=args.trees,
+             point_names=args.point_names,
+             server=args.server,
+             resample=args.resample,
+             rescale=args.rescale,
+             out_filename=args.out_filename,
+             reread_data=args.reread_data,
+             verbose=args.verbose,
+             config=args.config,)
 
 if __name__ == '__main__':
     read_mds_cli()
