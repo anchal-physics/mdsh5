@@ -38,37 +38,39 @@ Additionally, if you use VSCode, I highly recomment installing the [H5Web extens
 
 **NOTE:** All tree and pointnames will be converted to upper case regardless of how you enter them. This is a chosen convention to keep the cache consistent even if you change the case of a pointname.
 
-Additional documentation would come soon. For now, please refer to the config_examples to get started on how to provide the input configuration. Additionally, use the help flag to print out the help message from `read_mds.py`:
+Additional documentation would come soon. For now, please refer to the [config_examples](https://github.com/anchal-physics/mdsh5/tree/main/mdsh5/config_examples) to get started on how to provide the input configuration.
+
+Additionally, use the help flag to print out the help message from `read_mds.py`:
 ```
 (mdsh5)% python mdsh5/read_mds.py -h                          
-usage: read_mds.py [-h] [-n SHOT_NUMBERS [SHOT_NUMBERS ...]] [-t TREES [TREES ...]] [-p POINT_NAMES [POINT_NAMES ...]] [-s SERVER] [-r RESAMPLE [RESAMPLE ...]]
-                   [--rescale RESCALE [RESCALE ...]] [-o OUT_FILENAME] [--reread_data] [-v] [-c CONFIG]
+usage: read_mds.py [-h] [-n SHOT_NUMBERS [SHOT_NUMBERS ...]] [-t TREES [TREES ...]] [-p POINT_NAMES [POINT_NAMES ...]] [-s SERVER] [-r RESAMPLE [RESAMPLE ...]] [--rescale RESCALE [RESCALE ...]] [-o OUT_FILENAME]
+                   [--reread_data] [-v] [-c CONFIG] [--configTemplate]
 
-Read MDSplus channel
+Read data from MDSPlus server for porivded shot numbers, trees, and pointnames.
 
 options:
   -h, --help            show this help message and exit
-  -n, --shot_numbers SHOT_NUMBERS [SHOT_NUMBERS ...]
+  -n SHOT_NUMBERS [SHOT_NUMBERS ...], --shot_numbers SHOT_NUMBERS [SHOT_NUMBERS ...]
                         Shot number(s)
-  -t, --trees TREES [TREES ...]
+  -t TREES [TREES ...], --trees TREES [TREES ...]
                         Tree name(s)
-  -p, --point_names POINT_NAMES [POINT_NAMES ...]
-                        Point name(s)
-  -s, --server SERVER   Server address. Default is 203.230.126.231:8005
-  -r, --resample RESAMPLE [RESAMPLE ...]
-                        Resample signal(s) by providing a list of start, stop, and increment values. For negative value, enclose them withing double quotes and add a space at the
-                        beginning.Example: --resample " -0.1" 10.0 0.1
+  -p POINT_NAMES [POINT_NAMES ...], --point_names POINT_NAMES [POINT_NAMES ...]
+                        Point name(s). Must match number of trees provided unless a single tree is given.
+  -s SERVER, --server SERVER
+                        Server address. Default is None
+  -r RESAMPLE [RESAMPLE ...], --resample RESAMPLE [RESAMPLE ...]
+                        Resample signal(s) by providing a list of start, stop, and increment values. For negative value, enclose them withing double quotes and add a space at the beginning.Example: --resample " -0.1"
+                        10.0 0.1
   --rescale RESCALE [RESCALE ...]
-                        Rescale time dimension of trees to ensure that all of are in same units. Especially important if resample is used. Provide a rescaling factor to be multiplied
-                        by time axis for each tree provides in trees option.Example: --resample " -0.1" 10.0 0.1
-  -o, --out_filename OUT_FILENAME
+                        Rescale time dimension of trees to ensure that all of are in same units. Especially important if resample is used. Provide a rescaling factor to be multiplied by time axis for each tree provides
+                        in trees option.Example: --resample " -0.1" 10.0 0.1
+  -o OUT_FILENAME, --out_filename OUT_FILENAME
                         Output filename for saving data in file. Default is None. in which case it does not save files.
   --reread_data         Will overwrite on existing data for corresponding data entries in out_file. Default behavior is to skip readingpointnames whose data is present.
   -v, --verbose         Print verbose messages
-  -c, --config CONFIG   Configuration file containing shot_numbers, trees, point_names, server, and other settings. If provided, corresponding command line arguments are ignored.
-  --configTemplate      If provided, configuration templates will be copied to current directory. All
-                        other arguments will be ignored.
-
+  -c CONFIG, --config CONFIG
+                        Configuration file containing shot_numbers, trees, point_names, server, and other settings. If provided, corresponding command line arguments are ignored.
+  --configTemplate      If provided, configuration templates will be copied to current directory. All other arguments will be ignored.
 ```
 Note that you can get configuration templates by using --configTemplate option and learn more by reading those files.
 
