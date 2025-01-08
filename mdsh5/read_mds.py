@@ -8,21 +8,62 @@ import yaml
 import shutil
 import os
 
-"""
-read_mdsplus_channel(shot_numbers=31779, trees='KSTAR',
-                     point_names='EP53:FOO', server='203.230.126.231:8005',
-                     resample=None, verbose=False)
 
-Mostly copied from connection_test.py by D. Eldon
-"""
-def read_mds(shot_numbers=31779, trees='KSTAR',
-             point_names='EP53:FOO', server='203.230.126.231:8005',
+def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
              resample=None, rescale=None, out_filename=None, reread_data=False,
-             config=None,
-             verbose=False,):
+             config=None, verbose=False,):
+    """
+    read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
+            resample=None, rescale=None, out_filename=None, reread_data=False,
+            config=None, verbose=False,)
+
+    Read data from MDSPlus server for porivded shot numbers, trees, and pointnames.
+
+    Input keyword arguments:
+    shot_numbers: <int> or <list(int)>. Default is None.
+    trees: <str> or list(str) or dict(tress -> list of pointnames). Default is None. If
+           list, then the lenght of this list should match length of list provided to
+           pointnames arguments for one-to-one mapping.
+    point_names: <str> or list(str). Default is  None. If list, then the lenght of this
+           list should match length of list provided to trees arguments for one-to-one
+           mapping.
+    server: <str>. MDSPlus server in the format of username@ip_address:port . Note that
+            it is assumed that your ssh configuration is setup to directly access this
+            server in case any tunneling is required.
+    resample: <lenght 3 iterable like list, tuple of floats> or
+              <dict(start: start_time, stop: stop_time, increment: time_step)>. If
+              provided as iterable, it should be in order start, stop, increment. It is
+              recommended to use dictionary input to ensure correct mapping. All times
+              should be float values and would be used in querying from time axis of
+              data.
+    rescale: <int, float> or <list(int or float)> or <dict(tree -> int or float)>
+             Used for rescaling time axis of data before resampling query (if any).
+             If <int, float>, same rescaling factor is applied across all trees.
+             If <list>, length of this list must be same as length of trees list for
+                        one to one mapping of rescaling factor to a particular tree.
+             If <dict>, each tree would get it's own rescaling factor. If a tree is not
+                        present in this dictionary, rescaling factor will default to 1.
+            Resamlplong factor gets multiplied with stored MDSPlus time axis data, thus
+            for example, if time axis data for a tree is in ms, supply rescaling factor
+            of 1e-3 to convert the downloaded data in seconds and resample in units of
+            seconds.
+    out_filename: <str> If provided, downloaded data will be stored in this filename in
+                  HDF5 format. Thus `.h5` extension should be provided.
+    reread_data: <bool> If True, even if a pointname data is already present in
+                 in `out_filename`, it will be downloaded again and overwritten. Can be
+                 used if resample or rescale is changed from previous download.
+    config: <str> or <dict>. If <str>, the configuration file in YAML format would be
+            read to create the configuration dictionary. Use <dict> if using in
+            interactive mode.
+            Configuration dictionary can have any of the above arguments present in it.
+            Arguments provided by configuration dictionary take presidence over argument
+            directly provided to the function.
+    verbose: <bool> If true, status messages will be printed while downloading data.
+    """
     if config is not None:
-        with open(config, 'r') as f:
-            config = yaml.safe_load(f)
+        if isinstance(config, str):
+            with open(config, 'r') as f:
+                config = yaml.safe_load(f)
         if 'shot_numbers' in config:
             shot_numbers = config['shot_numbers']
         if 'trees' in config:
@@ -150,6 +191,10 @@ def read_mds(shot_numbers=31779, trees='KSTAR',
 
 
 def add_slash(s):
+    """
+    Make the name uppercase and add \\ suffix if not present already or if the name
+    does not start with PTDATA.
+    """
     if s.startswith("\\") or s.startswith("PTDATA"):
         return s.upper()
     ss = "\\" + s.upper()
@@ -157,6 +202,9 @@ def add_slash(s):
 
 
 def add_resample(pn, resample, rescale_fac):
+    """
+    Add resampling function wrapped in TDI call based on resample and rescale factor.
+    """
     if resample is None:
         return pn
     if isinstance(resample, dict):
@@ -166,20 +214,35 @@ def add_resample(pn, resample, rescale_fac):
     return f"resample({pn}, {resample[0]}, {resample[1]}, {resample[2]})"
 
 def get_time_array(resample):
+    """
+    For a resample request, locally generate the time axis.
+    """
     if isinstance(resample, dict):
         resample = [resample['start'], resample['stop'], resample['increment']]
     return np.arange(resample[0], resample[1] + resample[2]*0.1, resample[2])
 
 
 def dim_of(pn, ii):
+    """
+    Add dim_of() wrapper for extracting dimensional information like time axis.
+    """
     return f"dim_of({pn}, {ii})"
 
 
 def units_of(pn):
+    """
+    Add units_of wrapper for extracting units of the data.
+    """
     return f"units_of({pn})"
 
 
 def check_exists(h5, shot_number, tree, point_name):
+    """
+    check_exists(h5, shot_number, tree, point_name)
+
+    Check if data for a point_name, tree, shot_number combination exists in the h5 file
+    object.
+    """
     sn = str(shot_number)
     if sn in h5:
         if tree in h5[sn]:
@@ -189,6 +252,12 @@ def check_exists(h5, shot_number, tree, point_name):
                     return True
 
 def append_h5(h5, shot_number, tree, point_name, data_dict):
+    """
+    append_h5(h5, shot_number, tree, point_name, data_dict)
+
+    Append downloaded data for a point_name, tree, shot_number combination to the h5
+    file object. If data already exists, it will be overwritten.
+    """
     sntpn_dict = data_dict[shot_number][tree][point_name]
     sn = str(shot_number)
     pn = point_name
@@ -207,12 +276,17 @@ def append_h5(h5, shot_number, tree, point_name, data_dict):
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Read MDSplus channel')
-    parser.add_argument('-n', '--shot_numbers', type=int, nargs='+', help='Shot number(s)')
+    parser = argparse.ArgumentParser(description='Read data from MDSPlus server for '
+                                                 'porivded shot numbers, trees, and '
+                                                 'pointnames.')
+    parser.add_argument('-n', '--shot_numbers', type=int, nargs='+',
+                        help='Shot number(s)')
     parser.add_argument('-t', '--trees', nargs='+', help='Tree name(s)')
-    parser.add_argument('-p', '--point_names', nargs='+', help='Point name(s)')
-    parser.add_argument('-s', '--server', default='203.230.126.231:8005',
-                        help='Server address. Default is 203.230.126.231:8005')
+    parser.add_argument('-p', '--point_names', nargs='+',
+                        help='Point name(s). Must match number of trees provided '
+                             'unless a single tree is given.')
+    parser.add_argument('-s', '--server', default=None,
+                        help='Server address. Default is None')
     parser.add_argument('-r', '--resample', nargs='+', type=float, default=None,
                         help='Resample signal(s) by providing a list of start, stop, '
                              'and increment values. For negative value, enclose them '
@@ -244,6 +318,9 @@ def get_args():
     return args
 
 def read_mds_cli():
+    """
+    Command line version of read_mds which gets converted into a script in package.
+    """
     args = get_args()
     if args.configTemplate:
         root_dir = os.path.dirname(os.path.abspath(__file__))
