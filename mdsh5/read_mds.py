@@ -150,8 +150,8 @@ def read_mds(shot_numbers=31779, trees='KSTAR',
 
 def add_slash(s):
     if s.startswith("\\") or s.startswith("PTDATA"):
-        return s
-    ss = "\\" + s
+        return s.upper()
+    ss = "\\" + s.upper()
     return r'' + ss.encode('unicode_escape').decode('utf-8')[1:]
 
 

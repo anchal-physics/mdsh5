@@ -36,6 +36,8 @@ Additionally, if you use VSCode, I highly recomment installing the [H5Web extens
 
 ## Documentation
 
+**NOTE:** All tree and pointnames will be converted to upper case regardless of how you enter them. This is a chosen convention to keep the cache consistent even if you change the case of a pointname.
+
 Additional documentation would come soon. For now, please refer to the config_examples to get started on how to provide the input configuration. Additionally, use the help flag to print out the help message from `read_mds.py`:
 ```
 (mdsh5)% python mdsh5/read_mds.py -h                          
