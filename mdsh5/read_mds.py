@@ -89,14 +89,18 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
     if isinstance(point_names, Iterable):
         point_names = [add_slash(pn) for pn in point_names]
     if isinstance(trees, str):
-        tree_dict = {trees: point_names}
+        tree_dict = {trees.upper(): point_names}
     elif isinstance(trees, list):
+        trees = [tree.upper() for tree in trees]
+        if len(trees) == 1:
+            trees = trees * len(point_names)
         if len(trees) != len(point_names):
             raise ValueError('trees and point_names must be the same length')
         tree_dict = {tree: [] for tree in trees}
         for tree, pn in zip(trees, point_names):
             tree_dict[tree].append(pn)
     elif isinstance(trees, dict):
+        trees = {tree.upper(): trees[tree] for tree in trees}
         tree_dict = {tree: [] for tree in trees}
         for tree in trees:
             if tree != "PTDATA":
