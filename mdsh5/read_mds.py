@@ -7,11 +7,12 @@ import h5py
 import yaml
 import shutil
 import os
+from tqdm import tqdm
 
 
 def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
              resample=None, rescale=None, out_filename=None, reread_data=False,
-             config=None, verbose=False,):
+             config=None):
     """
     read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             resample=None, rescale=None, out_filename=None, reread_data=False,
@@ -58,7 +59,6 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             Configuration dictionary can have any of the above arguments present in it.
             Arguments provided by configuration dictionary take presidence over argument
             directly provided to the function.
-    verbose: <bool> If true, status messages will be printed while downloading data.
     """
     if config is not None:
         if isinstance(config, str):
@@ -130,33 +130,37 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
     if out_filename is not None:
         h5 = h5py.File(out_filename, 'a')
         to_write = True
-    for sn in shot_numbers:
+    missed = {}
+    DW = 25
+    PW = 11
+    shot_tqdm = tqdm(shot_numbers, desc="Shots".rjust(DW))
+    for sn in shot_tqdm:
+        shot_tqdm.set_description(f"On #{sn} |".rjust(DW - PW) + " Shots".rjust(PW))
         data_dict[sn] = {tree: {} for tree in tree_dict}
-        for tree in tree_dict:
+        tree_tqdm = tqdm(tree_dict, desc="Trees".rjust(DW), leave=False)
+        for tree in tree_tqdm:
+            tree_tqdm.set_description(f"On {tree} |".rjust(DW - PW) + " Trees".rjust(PW))
             rescale_fac = 1
             if tree in rescale_dict:
                 rescale_fac = float(rescale_dict[tree])
             if tree != "PTDATA":
                 try:
-                    if verbose:
-                        print(f"    Opening tree {tree} at shot number {sn}...")
                     conn.openTree(tree, sn)
                 except BaseException:
-                    print("-------------------------------------------------")
-                    print(f"Error in opening {tree} at shot number {sn}")
-                    print(exc)
-                    print("-------------------------------------------------")
+                    if sn not in missed:
+                        missed[sn] = {}
+                    missed[sn][tree] = 'ALL'
+                    continue
                     pass
-            for pn in tree_dict[tree]:
+            pn_tqdm = tqdm(tree_dict[tree], desc="Pointnames".rjust(DW), leave=False)
+            for pn in pn_tqdm:
+                pn_tqdm.set_description(f"{pn} |".rjust(DW - PW) + " Pointnames".rjust(PW))
                 if (not reread_data) and to_write:
                     if check_exists(h5, sn, tree, pn):
                         continue
                 try:
-                    if verbose:
-                        print(f"        Reading signal {pn}")
                     if tree == "PTDATA":
                         pn = 'PTDATA("' + pn + '")'
-                        print(f"        Reading signal {pn}")
                     if pn.startswith("PTDATA"):
                         signal = conn.get(add_resample(pn[:-1] + f", {sn})", resample, rescale_fac))
                     else:
@@ -173,21 +177,60 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
 
                             data_dict[sn][tree][pn][f'dim{ii}'] = dim
                         except BaseException as exc:
-                            print("-------------------------------------------------")
-                            print(f"Error in reading dim of {tree}: {pn} in shot "
-                                    + f"number {sn}")
-                            print(exc)
-                            print("-------------------------------------------------")
+                            if sn not in missed:
+                                missed[sn] = {}
+                            if tree not in missed[sn]:
+                                missed[sn][tree] = {}
+                            missed[sn][tree][pn] = 'Dim'
                             pass
                     if to_write:
                         append_h5(h5, sn, tree, pn, data_dict)
                 except BaseException as exc:
-                    print("-------------------------------------------------")
-                    print(f"Error in reading {tree}: {pn} in shot number {sn}")
-                    print(exc)
-                    print("-------------------------------------------------")
+                    if sn not in missed:
+                        missed[sn] = {}
+                    if tree not in missed[sn]:
+                        missed[sn][tree] = {}
+                    missed[sn][tree][pn] = 'ALL'
                     pass
-
+            if sn in missed:
+                if tree in missed[sn]:
+                    all_missed = True
+                    for pn in tree_dict[tree]:
+                        if pn not in missed[sn][tree]:
+                            all_missed = False
+                            break
+                        all_missed = all_missed and missed[sn][tree][pn] == 'ALL'
+                    if all_missed:
+                        missed[sn][tree] = 'ALL'
+            tree_tqdm.set_description(desc="Trees".rjust(DW))
+        if sn in missed:
+            all_missed = True
+            for tree in tree_dict:
+                if tree not in missed[sn]:
+                    all_missed = False
+                    break
+                all_missed = all_missed and missed[sn][tree] == 'ALL'
+            if all_missed:
+                missed[sn] = 'ALL'
+        shot_tqdm.set_description(desc="Shots".rjust(DW))
+    
+    print("Done!")
+    if len(missed) != 0:
+        print("Following items could not be downloaded, completely (ALL) or dimension not present (Dim)")
+        for sn in missed:
+            if missed[sn] == 'ALL':
+                print(f"Shot {sn}: ALL")
+                continue
+            else:
+                print(f"Shot {sn}:")
+            for tree in missed[sn]:
+                if missed[sn][tree] == 'ALL':
+                    print(f"  Tree {tree}: ALL")
+                    continue
+                else:
+                    print(f"  Tree {tree}:")
+                for pn in missed[sn][tree]:
+                    print(f"    {pn}: {missed[sn][tree][pn]}")
     if to_write:
         h5.close()  
     
@@ -341,7 +384,6 @@ def read_mds_cli():
              rescale=args.rescale,
              out_filename=args.out_filename,
              reread_data=args.reread_data,
-             verbose=args.verbose,
              config=args.config,)
 
 if __name__ == '__main__':
