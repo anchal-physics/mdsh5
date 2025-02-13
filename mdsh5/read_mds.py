@@ -163,6 +163,7 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
                     missed[sn][tree] = 'ALL'
                     continue
                     pass
+            all_signals = conn.getMany()
             pn_tqdm = tqdm(tree_dict[tree], desc="Pointnames".rjust(DW), leave=False)
             for pn in pn_tqdm:
                 pn_tqdm.set_description(f"{pn} |".rjust(DW - PW) + " Pointnames".rjust(PW))
@@ -173,30 +174,63 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
                     if tree == "PTDATA":
                         pn = 'PTDATA("' + pn + '")'
                     if pn.startswith("PTDATA"):
-                        signal = conn.get(add_resample(pn[:-1] + f", {sn})", resample, rescale_fac))
+                        all_signals.append(pn, add_resample(pn[:-1] + f", {sn})", resample, rescale_fac))
+                        # signal = conn.get(add_resample(pn[:-1] + f", {sn})", resample, rescale_fac))
                     else:
-                        signal = conn.get(add_resample(pn, resample, rescale_fac))
-                    data = signal.data()
-                    units = conn.get(units_of(pn)).data()
-                    data_dict[sn][tree][pn] = {'data': data, 'units': units}
-                    for ii in range(np.ndim(data)):
-                        try:
-                            if resample is None or ii != 0:
-                                dim = conn.get(dim_of(pn, ii)).data() * rescale_fac
-                            else:
-                                dim = get_time_array(resample)
+                        all_signals.append(add_resample(pn, resample, rescale_fac))
+                        # signal = conn.get(add_resample(pn, resample, rescale_fac))
+                    all_signals.append(pn + '=>units', units_of(pn))
+                    all_signals.append(pn + '=>dim0', dim_of(pn, 0))
+                    all_signals.append(pn + '=>dim1', dim_of(pn, 1))
+                    # data = signal.data()
+                    # units = conn.get(units_of(pn)).data()
+                    # data_dict[sn][tree][pn] = {'data': data, 'units': units}
+                    # for ii in range(np.ndim(data)):
+                    #     try:
+                    #         if resample is None or ii != 0:
+                    #             dim = conn.get(dim_of(pn, ii)).data() * rescale_fac
+                    #         else:
+                    #             dim = get_time_array(resample)
 
+                    #         data_dict[sn][tree][pn][f'dim{ii}'] = dim
+                    #     except BaseException as exc:
+                    #         if sn not in missed:
+                    #             missed[sn] = {}
+                    #         if tree not in missed[sn]:
+                    #             missed[sn][tree] = {}
+                    #         missed[sn][tree][pn] = f'Dim{ii}'
+                    #         pass
+                    # if to_write:
+                    #     append_h5(h5, sn, tree, pn, data_dict)
+                except BaseException as exc:
+                    if sn not in missed:
+                        missed[sn] = {}
+                    if tree not in missed[sn]:
+                        missed[sn][tree] = {}
+                    missed[sn][tree][pn] = 'ALL'
+                    pass
+            all_signals.execute()
+            for pn in tree_dict[tree]:
+                try:
+                    print(pn)
+                    data = all_signals.get(pn).data()
+                    units = all_signals.get(pn + '=>units').data()
+                    data_dict[sn][tree][pn] = {'data': data, 'units': units}
+                    for ii in range(2):
+                        try:
+                            dim = all_signals.get(pn + f'=>dim{ii}').data()
                             data_dict[sn][tree][pn][f'dim{ii}'] = dim
                         except BaseException as exc:
                             if sn not in missed:
                                 missed[sn] = {}
                             if tree not in missed[sn]:
                                 missed[sn][tree] = {}
-                            missed[sn][tree][pn] = 'Dim'
+                            missed[sn][tree][pn] = f'Dim{ii}'
                             pass
                     if to_write:
                         append_h5(h5, sn, tree, pn, data_dict)
                 except BaseException as exc:
+                    print_exc()
                     if sn not in missed:
                         missed[sn] = {}
                     if tree not in missed[sn]:
