@@ -3,6 +3,7 @@ shot_numbers: # Multiple shot numbers
   - 36159
   - 36160
   - 36161
+  - 36162 to 36166  # Shots can be given in a range as well using ' to ' in between
 
 trees: # Different trees can be listed like this
   EFIT01:           # Note that adding a \ is not required

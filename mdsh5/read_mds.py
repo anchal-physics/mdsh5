@@ -15,13 +15,16 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
              config=None):
     """
     read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
-            resample=None, rescale=None, out_filename=None, reread_data=False,
-            config=None, verbose=False,)
+             resample=None, rescale=None, out_filename=None, reread_data=False,
+             config=None)
 
     Read data from MDSPlus server for porivded shot numbers, trees, and pointnames.
 
     Input keyword arguments:
-    shot_numbers: <int> or <list(int)>. Default is None.
+    shot_numbers: <int or str> or <list(int or str)>. Default is None. When str, the
+                  string is assumed ot be in format:
+                  "<start_shot_number> to <end_shot_number>" with to as the separator
+                  word to give a range of shot numbers.
     trees: <str> or list(str) or dict(tress -> list of pointnames). Default is None. If
            list, then the lenght of this list should match length of list provided to
            pointnames arguments for one-to-one mapping.
@@ -80,10 +83,18 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             out_filename = config['out_filename']
         if 'reread_data' in config:
             reread_data = config['reread_data']
-        if 'verbose' in config:
-            verbose = config['verbose']
-    if isinstance(shot_numbers, int):
+    if isinstance(shot_numbers, int) or isinstance(shot_numbers, str):
         shot_numbers = [shot_numbers]
+    for shot in shot_numbers:
+        if isinstance(shot, str):
+            if 'to' in shot:
+                shotrange = shot.split('to')
+                shotstart = int(shotrange[0])
+                shotend = int(shotrange[1]) + 1
+                shot_numbers.remove(shot)
+                shot_numbers += list(range(shotstart, shotend))
+            else:
+                shot_numbers += [int(shot)]
     if isinstance(point_names, str):
         point_names = [point_names]
     if isinstance(point_names, Iterable):
@@ -326,8 +337,9 @@ def get_args():
     parser = argparse.ArgumentParser(description='Read data from MDSPlus server for '
                                                  'porivded shot numbers, trees, and '
                                                  'pointnames.')
-    parser.add_argument('-n', '--shot_numbers', type=int, nargs='+',
-                        help='Shot number(s)')
+    parser.add_argument('-n', '--shot_numbers', nargs='+',
+                        help='Shot number(s). You can provide a range using double '
+                             'quotes to pass a string.eg. -n "12345 to 12354"')
     parser.add_argument('-t', '--trees', nargs='+', help='Tree name(s)')
     parser.add_argument('-p', '--point_names', nargs='+',
                         help='Point name(s). Must match number of trees provided '
@@ -352,8 +364,6 @@ def get_args():
                         help='Will overwrite on existing data for corresponding data '
                              'entries in out_file. Default behavior is to skip reading'
                              'pointnames whose data is present.')
-    parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Print verbose messages')
     parser.add_argument('-c', '--config', default=None, type=str,
                         help='Configuration file containing shot_numbers, trees, '
                              'point_names, server, and other settings. If provided, '
