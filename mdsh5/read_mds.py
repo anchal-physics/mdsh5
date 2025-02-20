@@ -60,41 +60,44 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             read to create the configuration dictionary. Use <dict> if using in
             interactive mode.
             Configuration dictionary can have any of the above arguments present in it.
-            Arguments provided by configuration dictionary take presidence over argument
+            Arguments provided by configuration dictionary are overridden by arguments
             directly provided to the function.
     """
     if config is not None:
         if isinstance(config, str):
             with open(config, 'r') as f:
                 config = yaml.safe_load(f)
-        if 'shot_numbers' in config:
+        if 'shot_numbers' in config and shot_numbers is None:
             shot_numbers = config['shot_numbers']
-        if 'trees' in config:
+        if 'trees' in config and trees is None:
             trees = config['trees']
-        if 'point_names' in config:
+        if 'point_names' in config and point_names is None:
             point_names = config['point_names']
-        if 'server' in config:
+        if 'server' in config and server is None:
             server = config['server']
-        if 'resample' in config:
+        if 'resample' in config and resample is None:
             resample = config['resample']
-        if 'rescale' in config:
+        if 'rescale' in config and rescale is None:
             rescale = config['rescale']
-        if 'out_filename' in config:
+        if 'out_filename' in config and out_filename is None:
             out_filename = config['out_filename']
-        if 'reread_data' in config:
+        if 'reread_data' in config and not reread_data:
             reread_data = config['reread_data']
     if isinstance(shot_numbers, int) or isinstance(shot_numbers, str):
         shot_numbers = [shot_numbers]
-    for shot in shot_numbers:
+    shot_numbers_copy = shot_numbers.copy()
+    shot_numbers = []
+    for shot in shot_numbers_copy:
         if isinstance(shot, str):
             if 'to' in shot:
                 shotrange = shot.split('to')
                 shotstart = int(shotrange[0])
                 shotend = int(shotrange[1]) + 1
-                shot_numbers.remove(shot)
                 shot_numbers += list(range(shotstart, shotend))
             else:
-                shot_numbers += [int(shot)]
+                shot_numbers.append(int(shot))
+        else:
+            shot_numbers.append(shot)
     if isinstance(point_names, str):
         point_names = [point_names]
     if isinstance(point_names, Iterable):
@@ -367,7 +370,8 @@ def get_args():
     parser.add_argument('-c', '--config', default=None, type=str,
                         help='Configuration file containing shot_numbers, trees, '
                              'point_names, server, and other settings. If provided, '
-                             'corresponding command line arguments are ignored.')
+                             'corresponding command line arguments are take precedence'
+                             ' over arguments provided in configuration file.')
     parser.add_argument('--configTemplate', action='store_true',
                         help='If provided, configuration templates will be copied to '
                              'current directory. All other arguments will be ignored.')
