@@ -1,7 +1,7 @@
 [project]
 name = "mdsh5"
 description = "A higher level python package that uses mdsthin to read MDSPlus data and store it in hdf5 formate for easy caching, viewing, distribution, and analysis."
-version = "0.0.5"
+version = "0.0.6"
 license = {file = "LICENSE"}
 readme = "README.md"
 authors = [
