@@ -13,6 +13,7 @@ trees: # Different trees can be listed like this
     - ZVSIN         # Outer strike point Z coordinate
     - RXPT1         # X point R coordinate
     - ZXPT1         # X point Z coordinate
+    - PSIRZ
   KSTAR:
     - NE_TCI01 # Line average density from Two-Color Interferometer
     - RC02              # Plasma current from rogowski

@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
              resample=None, rescale=None, out_filename=None, reread_data=False,
-             config=None):
+             force_full_data_read=False, config=None):
     """
     read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
              resample=None, rescale=None, out_filename=None, reread_data=False,
@@ -56,6 +56,10 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
     reread_data: <bool> If True, even if a pointname data is already present in
                  in `out_filename`, it will be downloaded again and overwritten. Can be
                  used if resample or rescale is changed from previous download.
+    force_full_data_read: <bool> If True, if resample attempt fails on a pointname,
+                           full data reading will be attempted without resampling. This
+                           is useful in cases where the pointname stores time dimension
+                           in other than dim0 data field.
     config: <str> or <dict>. If <str>, the configuration file in YAML format would be
             read to create the configuration dictionary. Use <dict> if using in
             interactive mode.
@@ -83,6 +87,8 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             out_filename = config['out_filename']
         if 'reread_data' in config and not reread_data:
             reread_data = config['reread_data']
+        if 'force_full_data_read' in config and not force_full_data_read:
+            force_full_data_read = config['force_full_data_read']
     if isinstance(shot_numbers, int) or isinstance(shot_numbers, str):
         shot_numbers = [shot_numbers]
     shot_numbers_copy = shot_numbers.copy()
@@ -180,6 +186,30 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
                     else:
                         signal = conn.get(add_resample(pn, resample, rescale_fac))
                     data = signal.data()
+                    if isinstance(data, str):
+                        if data == 'bad resample signal in':
+                            if force_full_data_read:
+                                if pn.startswith("PTDATA"):
+                                    signal = conn.get(pn[:-1] + f", {sn})")
+                                else:
+                                    signal = conn.get(pn)
+                                data = signal.data()
+                                if isinstance(data, str):
+                                    # The data is still a string
+                                    if sn not in missed:
+                                        missed[sn] = {}
+                                    if tree not in missed[sn]:
+                                        missed[sn][tree] = {}
+                                    missed[sn][tree][pn] = 'ALL data missed due to error: ' + data
+                                    continue
+                            else:
+                                if sn not in missed:
+                                    missed[sn] = {}
+                                if tree not in missed[sn]:
+                                    missed[sn][tree] = {}
+                                missed[sn][tree][pn] = 'Bad Resample Request (Try using force_full_data_read option)'
+                                continue
+
                     units = conn.get(units_of(pn)).data()
                     data_dict[sn][tree][pn] = {'data': data, 'units': units}
                     for ii in range(np.ndim(data)):
@@ -367,6 +397,10 @@ def get_args():
                         help='Will overwrite on existing data for corresponding data '
                              'entries in out_file. Default behavior is to skip reading'
                              'pointnames whose data is present.')
+    parser.add_argument('-f', '--force_full_data_read', action='store_true',
+                        help='If resample fails, full data read will be attempted '
+                             'without resampling. This is useful in cases where the '
+                             'time axis is stored in other than dim0 data field.')
     parser.add_argument('-c', '--config', default=None, type=str,
                         help='Configuration file containing shot_numbers, trees, '
                              'point_names, server, and other settings. If provided, '
@@ -398,6 +432,7 @@ def read_mds_cli():
              rescale=args.rescale,
              out_filename=args.out_filename,
              reread_data=args.reread_data,
+             force_full_data_read=args.force_full_data_read,
              config=args.config,)
 
 if __name__ == '__main__':
