@@ -41,5 +41,5 @@ reread_data: False            # Optional, if true, will re read data that is alr
 # Unless your username on the machine matches the username in MDS server, you should add
 # the username at the start of the server address as shown below.
 # It is assumed that you have setup any required tunneling in your ~/.ssh/config
-server: guptaa@203.230.126.231:8005
+server: guptaa@mdsr2.science.kstar.kfe.re.kr:8005
 verbose: true
