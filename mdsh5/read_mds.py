@@ -192,7 +192,7 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
                                 missed[sn] = {}
                             if tree not in missed[sn]:
                                 missed[sn][tree] = {}
-                            missed[sn][tree][pn] = 'Dim'
+                            missed[sn][tree][pn] = f'Dim{ii}'
                             pass
                     if to_write:
                         append_h5(h5, sn, tree, pn, data_dict)
