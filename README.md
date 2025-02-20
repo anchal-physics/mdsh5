@@ -31,7 +31,7 @@ This package is one level higher data management tool. It uses [`mdsthin`](https
 
 Additionally, if you use VSCode, I highly recomment installing the [H5Web extension](https://marketplace.visualstudio.com/items?itemName=h5web.vscode-h5web) which let's you quickly visualize the data stored in the HDF5 files created by this package.
 
-![KSTAR_data](H5WebExample.png)
+![KSTAR_data](https://raw.githubusercontent.com/anchal-physics/mdsh5/main/H5WebExample.png)
 
 ## Documentation
 
