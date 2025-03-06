@@ -12,13 +12,13 @@ from tqdm import tqdm
 
 def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
              resample=None, rescale=None, out_filename=None, reread_data=False,
-             force_full_data_read=False, config=None):
+             force_full_data_read=False, config=None, leave_shots_tqdm=True):
     """
     read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
              resample=None, rescale=None, out_filename=None, reread_data=False,
              config=None)
 
-    Read data from MDSPlus server for porivded shot numbers, trees, and pointnames.
+    Read data from MDSPlus server for provided shot numbers, trees, and pointnames.
 
     Input keyword arguments:
     shot_numbers: <int or str> or <list(int or str)>. Default is None. When str, the
@@ -47,7 +47,7 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
                         one to one mapping of rescaling factor to a particular tree.
              If <dict>, each tree would get it's own rescaling factor. If a tree is not
                         present in this dictionary, rescaling factor will default to 1.
-            Resamlplong factor gets multiplied with stored MDSPlus time axis data, thus
+            Resampling factor gets multiplied with stored MDSPlus time axis data, thus
             for example, if time axis data for a tree is in ms, supply rescaling factor
             of 1e-3 to convert the downloaded data in seconds and resample in units of
             seconds.
@@ -89,12 +89,14 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             reread_data = config['reread_data']
         if 'force_full_data_read' in config and not force_full_data_read:
             force_full_data_read = config['force_full_data_read']
-    if isinstance(shot_numbers, int) or isinstance(shot_numbers, str):
+    if isinstance(shot_numbers, int) or isinstance(shot_numbers, str) or isinstance(shot_numbers, dict):
         shot_numbers = [shot_numbers]
     shot_numbers_copy = shot_numbers.copy()
     shot_numbers = []
     for shot in shot_numbers_copy:
-        if isinstance(shot, str):
+        if isinstance(shot, dict):
+            shot_numbers += search_shots(shot, server)
+        elif isinstance(shot, str):
             if 'to' in shot:
                 shotrange = shot.split('to')
                 shotstart = int(shotrange[0])
@@ -153,7 +155,7 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
     missed = {}
     DW = 25
     PW = 11
-    shot_tqdm = tqdm(shot_numbers, desc="Shots".rjust(DW))
+    shot_tqdm = tqdm(shot_numbers, desc="Shots".rjust(DW), leave=leave_shots_tqdm)
     for sn in shot_tqdm:
         shot_tqdm.set_description(f"On #{sn} |".rjust(DW - PW) + " Shots".rjust(PW))
         data_dict[sn] = {tree: {} for tree in tree_dict}
@@ -280,6 +282,101 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
     
     return data_dict
 
+def search_shots(search_config, server=None, out_filename=None):
+    """
+    search_shots(search_config, server=None)
+
+    Function to search through the MDSplus server for a particular condition.
+
+    The search_config dictionary is required to have following parameters:
+    search_shots: <int or str> or <list(int or str)>. Default is None. When str, the
+                  string is assumed ot be in format:
+                  "<start_shot_number> to <end_shot_number>" with to as the separator
+                  word to give a range of shot numbers.
+    variables: <dict(<variable_name>: {"tree": <tree_name>, "point_name": <point_name>})
+               Example: {'x': {'tree': 'PCS_KSTAR', 'point_name': 'EFSIPMEAS'}}. Any
+               number of varibales can be defined like this.
+    condition: <str> A python executable string.
+    The dictionary can have further optional arguments:
+    accept_on: <bool>. Default is True. Shot is accepted on condition == accept_on.
+    resample: <lenght 3 iterable like list, tuple of floats> or
+              <dict(start: start_time, stop: stop_time, increment: time_step)>. If
+              provided as iterable, it should be in order start, stop, increment. It is
+              recommended to use dictionary input to ensure correct mapping. All times
+              should be float values and would be used in querying from time axis of
+              data. Default is [-0.1, 20.0, 0.1]. For fast search, try to keep
+              resampling at lower sampling rates.
+    rescale: <int, float> or <list(int or float)> or <dict(tree -> int or float)>
+             Used for rescaling time axis of data before resampling query (if any).
+             If <int, float>, same rescaling factor is applied across all trees.
+             If <list>, length of this list must be same as length of trees list for
+                        one to one mapping of rescaling factor to a particular tree.
+             If <dict>, each tree would get it's own rescaling factor. If a tree is not
+                        present in this dictionary, rescaling factor will default to 1.
+            Resampling factor gets multiplied with stored MDSPlus time axis data, thus
+            for example, if time axis data for a tree is in ms, supply rescaling factor
+            of 1e-3 to convert the downloaded data in seconds and resample in units of
+            seconds. Default is None.
+    force_full_data_read: <bool> If True, if resample attempt fails on a pointname,
+                           full data reading will be attempted without resampling. This
+                           is useful in cases where the pointname stores time dimension
+                           in other than dim0 data field. Default is False.
+    server: <str>. MDSPlus server in the format of username@ip_address:port . Note that
+            it is assumed that your ssh configuration is setup to directly access this
+            server in case any tunneling is required. If not provided, server is searched
+            in search_config dictionary.
+    out_filename: <str> Output filename for saving selected shot numbers. Default is
+                  None in which case the selected shots are returned.
+    
+    Other than search_config, the function can be given server outside of search_config.
+    """
+    print("Searching...")
+    shot_numbers = search_config['search_shots']
+    if 'server' in search_config and server is None:
+        server = search_config['server']
+    if 'out_filename' in search_config and out_filename is None:
+        out_filename = search_config['out_filename']
+    trees = []
+    point_names = []
+    for var in search_config['variables']:
+        trees += [search_config['variables'][var]['tree']]
+        point_names += [search_config['variables'][var]['point_name']]
+    if "resample" in search_config:
+        resample = search_config["resample"]
+    else:
+        resample = [-0.1, 20.0, 0.1]
+    if "rescale" in search_config:
+        rescale = search_config["rescale"]
+    else:
+        rescale = None
+    if "force_full_data_read" in search_config:
+        force_full_data_read = search_config["force_full_data_read"]
+    else:
+        force_full_data_read = False
+    if "accept_on" in search_config:
+        accept_on = search_config["accept_on"]
+    else:
+        accept_on = True
+
+    search_data = read_mds(shot_numbers=shot_numbers, trees=trees,
+                           point_names=point_names, server=server, 
+                           resample=resample, rescale=rescale,
+                           force_full_data_read=force_full_data_read,
+                           leave_shots_tqdm=False)
+    selected_shots = []
+    for shot in search_data:
+        for var in search_config['variables']:
+            tree = search_config['variables'][var]['tree']
+            pn = search_config['variables'][var]['point_name']
+            exec(f"{var} = search_data[{shot}]['{tree}']['{add_slash(pn)}']['data']")
+            if eval(search_config["condition"]) == accept_on:
+                selected_shots += [shot]
+    if out_filename is not None:
+        with open(out_filename, 'a')as f:
+            for shot in selected_shots:
+                f.write(str(shot) + '\n')
+    return selected_shots
+
 
 def add_slash(s):
     """
@@ -368,7 +465,7 @@ def append_h5(h5, shot_number, tree, point_name, data_dict):
 
 def get_args():
     parser = argparse.ArgumentParser(description='Read data from MDSPlus server for '
-                                                 'porivded shot numbers, trees, and '
+                                                 'provided shot numbers, trees, and '
                                                  'pointnames.')
     parser.add_argument('-n', '--shot_numbers', nargs='+',
                         help='Shot number(s). You can provide a range using double '

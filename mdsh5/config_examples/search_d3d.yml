@@ -1,0 +1,18 @@
+search_shots: 198425 to 198430
+variables:                  # Required to define the condition later
+  x:                        # Define a variable by giving a tree and point_name for it
+    tree: D3D
+    point_name: PTDATA("IP")
+condition: "any(abs(x) > 1e5)"      # Condition should be valid python expression resulting in True or False
+accept_on: true             # (Optional) Default is true
+resample:                   # (Optional) Default is from -0.1 to 20.0 in steps of 0.1
+  start: -0.1
+  stop: 6.0
+  increment: 0.1
+rescale:
+  D3D: 1e-3
+out_filename: D3D_selected_shots.txt   # File to write data output to
+# Unless your username on the machine matches the username in MDS server, you should add
+# the username at the start of the server address as shown below.
+# It is assumed that you have setup any required tunneling in your ~/.ssh/config
+server: guptaa@atlas.gat.com

@@ -1,0 +1,23 @@
+search_shots: 36167 to 36170
+variables:                  # Required to define the condition later
+  x:                        # Define a variable by giving a tree and point_name for it
+    tree: PCS_KSTAR
+    point_name: EFSIPMEAS
+condition: "any(abs(x) > 0.5)"      # Condition should be valid python expression resulting in True or False
+accept_on: true             # (Optional) Default is true
+resample:                   # (Optional) Default is from -0.1 to 20.0 in steps of 0.1
+  start: -0.1
+  stop: 20
+  increment: 0.1
+
+# Optional:
+# To provide different dim0 scaling to ensure all output data is in same units.
+# This is important if resample argument is used.
+rescale:                      
+  EFIT01: 1e-3                # EFIT01 writes dim0 in ms
+  KSTAR: 1                    # KSTAR stores dim0 in s
+
+# Unless your username on the machine matches the username in MDS server, you should add
+# the username at the start of the server address as shown below.
+# It is assumed that you have setup any required tunneling in your ~/.ssh/config
+server: guptaa@mdsr2.science.kstar.kfe.re.kr:8005

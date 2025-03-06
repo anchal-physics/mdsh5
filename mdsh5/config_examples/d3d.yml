@@ -2,12 +2,35 @@
 # See kstar.yml for more possible configurations
 shot_numbers:
   - 199346
+  # You can filter through a range of shots using following structure:
+  - search_shots: 198425 to 198430
+    variables:                  # Required to define the condition later
+      x:                        # Define a variable by giving a tree and point_name for it
+        tree: D3D
+        point_name: PTDATA("IP")
+    condition: "any(abs(x) > 1e5)"      # Condition should be valid python expression resulting in True or False
+    accept_on: true             # (Optional) Default is true
+    resample:                   # (Optional) Default is from -0.1 to 20.0 in steps of 0.1
+      start: -0.1
+      stop: 6.0
+      increment: 0.1
+    rescale:
+      D3D: 1e-3
 
 trees:
   D3D: 
     - PTDATA("IP")      # To add PTDATA pointnames, wrap it in PTDATA("") or add them under a new tree called PTDATA
     - TOP.NEUTRALS.GASFLOW.GASD.FLOW
-    - TOP.NEUTRALS.GASFLOW.GASD.FLOW.LABEL
+
+# Optional:
+# Can be used to reduce the amount of data handled or make all data with same time axis
+resample:                     # Can provide same info as list [-0.1, 20, 0.001]
+  start: -0.1
+  stop: 7.0
+  increment: 0.001
+
+rescale:
+  D3D: 1e-3 # D3D stores data in ms
 
 out_filename: D3D_data.h5   # File to write data output to
 reread_data: False            # Optional, if true, will re read data that is already present in hdf5 file
