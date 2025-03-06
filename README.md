@@ -42,10 +42,10 @@ Additional documentation would come soon. For now, please refer to the [config_e
 Additionally, use the help flag to print out the help message from `read_mds`:
 ```
 % read_mds -h
-usage: read_mds [-h] [-n SHOT_NUMBERS [SHOT_NUMBERS ...]] [-t TREES [TREES ...]] [-p POINT_NAMES [POINT_NAMES ...]] [-s SERVER] [-r RESAMPLE [RESAMPLE ...]] [--rescale RESCALE [RESCALE ...]]
-                [-o OUT_FILENAME] [--reread_data] [-f] [-c CONFIG] [--configTemplate]
+usage: read_mds [-h] [-n SHOT_NUMBERS [SHOT_NUMBERS ...]] [-t TREES [TREES ...]] [-p POINT_NAMES [POINT_NAMES ...]] [-s SERVER] [-r RESAMPLE [RESAMPLE ...]]
+                [--rescale RESCALE [RESCALE ...]] [-o OUT_FILENAME] [--reread_data] [-f] [-c CONFIG] [--configTemplate]
 
-Read data from MDSPlus server for porivded shot numbers, trees, and pointnames.
+Read data from MDSPlus server for provided shot numbers, trees, and pointnames.
 
 options:
   -h, --help            show this help message and exit
@@ -58,23 +58,42 @@ options:
   -s SERVER, --server SERVER
                         Server address. Default is None
   -r RESAMPLE [RESAMPLE ...], --resample RESAMPLE [RESAMPLE ...]
-                        Resample signal(s) by providing a list of start, stop, and increment values. For negative value, enclose them withing double quotes and add a space at the beginning.Example:
-                        --resample " -0.1" 10.0 0.1
+                        Resample signal(s) by providing a list of start, stop, and increment values. For negative value, enclose them withing double quotes and add a
+                        space at the beginning.Example: --resample " -0.1" 10.0 0.1
   --rescale RESCALE [RESCALE ...]
-                        Rescale time dimension of trees to ensure that all of are in same units. Especially important if resample is used. Provide a rescaling factor to be multiplied by time axis for
-                        each tree provides in trees option.Example: --resample " -0.1" 10.0 0.1
+                        Rescale time dimension of trees to ensure that all of are in same units. Especially important if resample is used. Provide a rescaling factor to
+                        be multiplied by time axis for each tree provides in trees option.Example: --resample " -0.1" 10.0 0.1
   -o OUT_FILENAME, --out_filename OUT_FILENAME
                         Output filename for saving data in file. Default is None. in which case it does not save files.
   --reread_data         Will overwrite on existing data for corresponding data entries in out_file. Default behavior is to skip readingpointnames whose data is present.
   -f, --force_full_data_read
-                        If resample fails, full data read will be attempted without resampling. This is useful in cases where the time axis is stored in other than dim0 data field.
+                        If resample fails, full data read will be attempted without resampling. This is useful in cases where the time axis is stored in other than dim0
+                        data field.
   -c CONFIG, --config CONFIG
-                        Configuration file containing shot_numbers, trees, point_names, server, and other settings. If provided, corresponding command line arguments are take precedence over arguments
-                        provided in configuration file.
+                        Configuration file containing shot_numbers, trees, point_names, server, and other settings. If provided, corresponding command line arguments are
+                        take precedence over arguments provided in configuration file.
   --configTemplate      If provided, configuration templates will be copied to current directory. All other arguments will be ignored.
-(base) gupta@F-CJXNMY7L7 mdsh5 % 
 ```
 Note that you can get configuration templates by using --configTemplate option and learn more by reading those files.
+
+A new script has been added to allow for quickly searching the data base with arbitrary criteria. Use the help menu to get started use --configTemplate to get template of search configuration files:
+```
+% search_shots -h 
+usage: search_shots [-h] [-c SEARCH_CONFIG] [-s SERVER] [-o OUT_FILENAME] [--configTemplate]
+
+Search MDSPlus server for provided search criteria and return a list of shots
+
+options:
+  -h, --help            show this help message and exit
+  -c SEARCH_CONFIG, --search_config SEARCH_CONFIG
+                        Configuration file containing search criteria.
+  -s SERVER, --server SERVER
+                        Server address. Default is None (read from search_config).
+  -o OUT_FILENAME, --out_filename OUT_FILENAME
+                        Output filename for saving selected shot numbers. Default is None in which case it looks for the value in search_config otherwise the selected
+                        shots are simply printed out.
+  --configTemplate      If provided, configuration templates will be copied to current directory. All other arguments will be ignored.
+```
 
 For queries, contanct Anchal Gupta (guptaa@fusion.gat.com). If you face any issues or have feature requests, please submit them at the [issue tracker](https://github.com/anchal-physics/mdsh5/issues).
 
