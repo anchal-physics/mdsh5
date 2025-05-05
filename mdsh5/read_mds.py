@@ -108,8 +108,6 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             shot_numbers.append(shot)
     if isinstance(point_names, str):
         point_names = [point_names]
-    if isinstance(point_names, Iterable):
-        point_names = [add_slash(pn) for pn in point_names]
     if isinstance(trees, str):
         tree_dict = {trees.upper(): point_names}
     elif isinstance(trees, list):
@@ -122,14 +120,12 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
         for tree, pn in zip(trees, point_names):
             tree_dict[tree].append(pn)
     elif isinstance(trees, dict):
-        trees = {tree.upper(): trees[tree] for tree in trees}
-        tree_dict = {tree: [] for tree in trees}
+        tree_dict = {tree.upper(): trees[tree] for tree in trees}
         for tree in trees:
-            if tree != "PTDATA":
-                if isinstance(trees[tree], str):
-                    tree_dict[tree] = [add_slash(trees[tree])]
-                else:
-                    tree_dict[tree] = [add_slash(pn) for pn in trees[tree]]
+            if isinstance(trees[tree], str):
+                tree_dict[tree] = [trees[tree]]
+            else:
+                tree_dict[tree] = trees[tree]
     
     rescale_dict = {}
     if isinstance(rescale, (int, float)):
@@ -177,6 +173,7 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             pn_tqdm = tqdm(tree_dict[tree], desc="Pointnames".rjust(DW), leave=False)
             for pn in pn_tqdm:
                 pn_tqdm.set_description(f"{pn} |".rjust(DW - PW) + " Pointnames".rjust(PW))
+                pns = add_slash(pn)
                 if (not reread_data) and to_write:
                     if check_exists(h5, sn, tree, pn):
                         continue
@@ -186,7 +183,7 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
                     if pn.startswith("PTDATA"):
                         signal = conn.get(add_resample(pn[:-1] + f", {sn})", resample, rescale_fac))
                     else:
-                        signal = conn.get(add_resample(pn, resample, rescale_fac))
+                        signal = conn.get(add_resample(pns, resample, rescale_fac))
                     data = signal.data()
                     if isinstance(data, str):
                         if data == 'bad resample signal in':
@@ -194,7 +191,7 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
                                 if pn.startswith("PTDATA"):
                                     signal = conn.get(pn[:-1] + f", {sn})")
                                 else:
-                                    signal = conn.get(pn)
+                                    signal = conn.get(pns)
                                 data = signal.data()
                                 if isinstance(data, str):
                                     # The data is still a string
@@ -212,12 +209,12 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
                                 missed[sn][tree][pn] = 'Bad Resample Request (Try using force_full_data_read option)'
                                 continue
 
-                    units = conn.get(units_of(pn)).data()
+                    units = conn.get(units_of(pns)).data()
                     data_dict[sn][tree][pn] = {'data': data, 'units': units}
                     for ii in range(np.ndim(data)):
                         try:
                             if resample is None or ii != 0:
-                                dim = conn.get(dim_of(pn, ii)).data() * rescale_fac
+                                dim = conn.get(dim_of(pns, ii)).data() * rescale_fac
                             else:
                                 dim = get_time_array(resample)
 
@@ -365,12 +362,14 @@ def search_shots(search_config, server=None, out_filename=None):
                            leave_shots_tqdm=False)
     selected_shots = []
     for shot in search_data:
+        scope_dict = {"search_data": search_data}
         for var in search_config['variables']:
             tree = search_config['variables'][var]['tree']
             pn = search_config['variables'][var]['point_name']
-            exec(f"{var} = search_data[{shot}]['{tree}']['{add_slash(pn)}']['data']")
-            if eval(search_config["condition"]) == accept_on:
-                selected_shots += [shot]
+            expr = f"{var} = search_data[{shot}]['{tree}']['{pn.upper()}']['data']"
+            exec(expr, scope_dict)
+        if eval(search_config["condition"], scope_dict) == accept_on:
+            selected_shots += [shot]
     if out_filename is not None:
         with open(out_filename, 'a')as f:
             for shot in selected_shots:
@@ -434,7 +433,8 @@ def check_exists(h5, shot_number, tree, point_name):
     sn = str(shot_number)
     if sn in h5:
         if tree in h5[sn]:
-            pns = add_slash(point_name)
+            # pns = add_slash(point_name)
+            pns = point_name
             if pns in h5[sn][tree]:
                 if 'data' in h5[sn][tree][pns]:
                     return True
