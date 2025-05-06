@@ -172,26 +172,25 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
                     pass
             pn_tqdm = tqdm(tree_dict[tree], desc="Pointnames".rjust(DW), leave=False)
             for pn in pn_tqdm:
+                pn = pn.upper()
                 pn_tqdm.set_description(f"{pn} |".rjust(DW - PW) + " Pointnames".rjust(PW))
-                pns = add_slash(pn)
+                if tree == "PTDATA":
+                    pns = 'PTDATA("' + pn + f'", {sn})'
+                elif pn.startswith('PTDATA('):
+                    pns = pn[:-1] + f', {sn})'
+                    pn = pn[8:-2]
+                else:
+                    pns = add_slash(pn)
                 if (not reread_data) and to_write:
                     if check_exists(h5, sn, tree, pn):
                         continue
                 try:
-                    if tree == "PTDATA":
-                        pn = 'PTDATA("' + pn + '")'
-                    if pn.startswith("PTDATA"):
-                        signal = conn.get(add_resample(pn[:-1] + f", {sn})", resample, rescale_fac))
-                    else:
-                        signal = conn.get(add_resample(pns, resample, rescale_fac))
+                    signal = conn.get(add_resample(pns, resample, rescale_fac))
                     data = signal.data()
                     if isinstance(data, str):
                         if data == 'bad resample signal in':
                             if force_full_data_read:
-                                if pn.startswith("PTDATA"):
-                                    signal = conn.get(pn[:-1] + f", {sn})")
-                                else:
-                                    signal = conn.get(pns)
+                                signal = conn.get(pns)
                                 data = signal.data()
                                 if isinstance(data, str):
                                     # The data is still a string
@@ -366,6 +365,8 @@ def search_shots(search_config, server=None, out_filename=None):
         for var in search_config['variables']:
             tree = search_config['variables'][var]['tree']
             pn = search_config['variables'][var]['point_name']
+            if pn.startswith('PTDATA('):
+                pn = pn[8:-2]
             expr = f"{var} = search_data[{shot}]['{tree}']['{pn.upper()}']['data']"
             exec(expr, scope_dict)
         if eval(search_config["condition"], scope_dict) == accept_on:

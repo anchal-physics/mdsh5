@@ -21,6 +21,8 @@ trees:
   D3D: 
     - PTDATA("IP")      # To add PTDATA pointnames, wrap it in PTDATA("") or add them under a new tree called PTDATA
     - TOP.NEUTRALS.GASFLOW.GASD.FLOW
+  PTDATA:
+    - x1volts
 
 # Optional:
 # Can be used to reduce the amount of data handled or make all data with same time axis
