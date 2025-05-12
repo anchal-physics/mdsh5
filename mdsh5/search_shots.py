@@ -18,6 +18,13 @@ def get_args():
                              'Default is None in which case it looks for the value in '
                              'search_config otherwise the selected shots are simply '
                              'printed out.')
+    parser.add_argument('-x', '--proxy_server', default=None,
+                        help='Proxy server to use to tunnel through to the server. '
+                             'If provided, the username part from server definition '
+                             'will be used to ssh into the proxy server from where it '
+                             'assumed that you have access to the MDSplus server. If '
+                             'the username for proxy-server is different, add it as '
+                             'a prefix here with @. Default is None')
     parser.add_argument('--configTemplate', action='store_true',
                         help='If provided, configuration templates will be copied to '
                              'current directory. All other arguments will be ignored.')
@@ -38,7 +45,9 @@ def search_shots_cli():
         return 0
     with open(args.search_config, 'r') as f:
         search_config = yaml.safe_load(f)
-    shot_list = search_shots(search_config=search_config, server=args.server)
+    shot_list = search_shots(search_config=search_config, server=args.server,
+                             out_filename=args.outfilename,
+                             proxy_server=args.proxy_server)
     if args.out_filename is None and 'out_filename' not in search_config:
         for shot in shot_list:
             print(shot)

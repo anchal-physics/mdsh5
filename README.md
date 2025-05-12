@@ -1,4 +1,8 @@
 # mdsh5
+
+[![Test](https://github.com/anchal-physics/mdsh5/actions/workflows/test.yml/badge.svg)](https://github.com/anchal-physics/mdsh5/actions/workflows/test.yml)
+![Codecov](https://img.shields.io/codecov/c/github/anchal-physics/mdsh5)
+
 A higher level python package that uses [`mdsthin`](https://github.com/MDSplus/mdsthin) to read MDSPlus data and store it in hdf5 formate for easy caching, viewing, distribution, and analysis.
 
 ## Usage:
@@ -42,75 +46,72 @@ Additional documentation would come soon. For now, please refer to the [config_e
 Additionally, use the help flag to print out the help message from `read_mds`:
 ```
 % read_mds -h
-usage: read_mds [-h] [-n SHOT_NUMBERS [SHOT_NUMBERS ...]] [-t TREES [TREES ...]] [-p POINT_NAMES [POINT_NAMES ...]] [-s SERVER] [-r RESAMPLE [RESAMPLE ...]]
-                [--rescale RESCALE [RESCALE ...]] [-o OUT_FILENAME] [--reread_data] [-f] [-c CONFIG] [--configTemplate]
+usage: read_mds [-h] [-n SHOT_NUMBERS [SHOT_NUMBERS ...]] [-t TREES [TREES ...]] [-p POINT_NAMES [POINT_NAMES ...]] [-s SERVER] [-x PROXY_SERVER]
+                [-r RESAMPLE [RESAMPLE ...]] [--rescale RESCALE [RESCALE ...]] [-o OUT_FILENAME] [--reread_data] [-f] [-c CONFIG] [--configTemplate]
 
 Read data from MDSPlus server for provided shot numbers, trees, and pointnames.
 
 options:
   -h, --help            show this help message and exit
-  -n SHOT_NUMBERS [SHOT_NUMBERS ...], --shot_numbers SHOT_NUMBERS [SHOT_NUMBERS ...]
+  -n, --shot_numbers SHOT_NUMBERS [SHOT_NUMBERS ...]
                         Shot number(s). You can provide a range using double quotes to pass a string.eg. -n "12345 to 12354"
-  -t TREES [TREES ...], --trees TREES [TREES ...]
+  -t, --trees TREES [TREES ...]
                         Tree name(s)
-  -p POINT_NAMES [POINT_NAMES ...], --point_names POINT_NAMES [POINT_NAMES ...]
+  -p, --point_names POINT_NAMES [POINT_NAMES ...]
                         Point name(s). Must match number of trees provided unless a single tree is given.
-  -s SERVER, --server SERVER
-                        Server address. Default is None
-  -r RESAMPLE [RESAMPLE ...], --resample RESAMPLE [RESAMPLE ...]
-                        Resample signal(s) by providing a list of start, stop, and increment values. For negative value, enclose them withing double quotes and add a
-                        space at the beginning.Example: --resample " -0.1" 10.0 0.1
+  -s, --server SERVER   MDSPlus server in the format of username@ip_address:port Default is None
+  -x, --proxy_server PROXY_SERVER
+                        Proxy server to use to tunnel through to the server. If provided, the username part from server definition will be used to ssh into the proxy
+                        server from where it assumed that you have access to the MDSplus server. If the username for proxy-server is different, add it as a prefix here
+                        with @. Default is None
+  -r, --resample RESAMPLE [RESAMPLE ...]
+                        Resample signal(s) by providing a list of start, stop, and increment values. For negative value, enclose them withing double quotes and add a space
+                        at the beginning.Example: --resample " -0.1" 10.0 0.1
   --rescale RESCALE [RESCALE ...]
-                        Rescale time dimension of trees to ensure that all of are in same units. Especially important if resample is used. Provide a rescaling factor to
-                        be multiplied by time axis for each tree provides in trees option.Example: --resample " -0.1" 10.0 0.1
-  -o OUT_FILENAME, --out_filename OUT_FILENAME
+                        Rescale time dimension of trees to ensure that all of are in same units. Especially important if resample is used. Provide a rescaling factor to be
+                        multiplied by time axis for each tree provides in trees option.Example: --resample " -0.1" 10.0 0.1
+  -o, --out_filename OUT_FILENAME
                         Output filename for saving data in file. Default is None. in which case it does not save files.
   --reread_data         Will overwrite on existing data for corresponding data entries in out_file. Default behavior is to skip readingpointnames whose data is present.
   -f, --force_full_data_read
                         If resample fails, full data read will be attempted without resampling. This is useful in cases where the time axis is stored in other than dim0
                         data field.
-  -c CONFIG, --config CONFIG
-                        Configuration file containing shot_numbers, trees, point_names, server, and other settings. If provided, corresponding command line arguments are
+  -c, --config CONFIG   Configuration file containing shot_numbers, trees, point_names, server, and other settings. If provided, corresponding command line arguments are
                         take precedence over arguments provided in configuration file.
   --configTemplate      If provided, configuration templates will be copied to current directory. All other arguments will be ignored.
 ```
-Note that you can get configuration templates by using --configTemplate option and learn more by reading those files.
 
-A new script has been added to allow for quickly searching the data base with arbitrary criteria. Use the help menu to get started use --configTemplate to get template of search configuration files:
+You can also search shots using `search_shots`:
 ```
-% search_shots -h 
-usage: search_shots [-h] [-c SEARCH_CONFIG] [-s SERVER] [-o OUT_FILENAME] [--configTemplate]
+% search_shots -h
+usage: search_shots [-h] [-c SEARCH_CONFIG] [-s SERVER] [-o OUT_FILENAME] [-x PROXY_SERVER] [--configTemplate]
 
 Search MDSPlus server for provided search criteria and return a list of shots
 
 options:
   -h, --help            show this help message and exit
-  -c SEARCH_CONFIG, --search_config SEARCH_CONFIG
+  -c, --search_config SEARCH_CONFIG
                         Configuration file containing search criteria.
-  -s SERVER, --server SERVER
-                        Server address. Default is None (read from search_config).
-  -o OUT_FILENAME, --out_filename OUT_FILENAME
+  -s, --server SERVER   Server address. Default is None (read from search_config).
+  -o, --out_filename OUT_FILENAME
                         Output filename for saving selected shot numbers. Default is None in which case it looks for the value in search_config otherwise the selected
                         shots are simply printed out.
+  -x, --proxy_server PROXY_SERVER
+                        Proxy server to use to tunnel through to the server. If provided, the username part from server definition will be used to ssh into the proxy
+                        server from where it assumed that you have access to the MDSplus server. If the username for proxy-server is different, add it as a prefix here
+                        with @. Default is None
   --configTemplate      If provided, configuration templates will be copied to current directory. All other arguments will be ignored.
 ```
 
+Again, using `--configTemplate` option would locally copy D3D and KSTAR config files for you and from there it is self-explaintory on how to use them.
+
+Note, that if you are outside the network from where MDSplus server can be queries, you can provide ssh details of a proxy server or the gateway node from where you can access the MDSplus serve. See the template files for examples.
+
 For queries, contanct Anchal Gupta (guptaa@fusion.gat.com). If you face any issues or have feature requests, please submit them at the [issue tracker](https://github.com/anchal-physics/mdsh5/issues).
 
-## Required ssh configurations
+## Recommended ssh key configurations
 
-This software does not take care of ssh tunneling often required to reach the "super secure" MDSPlus servers of various tokamaks in the world. Here I provide a simple language solution of what you would need to do:
-
-If the MDSPlus server is only available in a closed of network whose gateway node is `gate.xyz.com`, add following to your `~/.ssh/config`:
-
-```
-Host <MDSPlusServerShortName> <MDSPlusServerFullAddress>
-	Hostname <MDSPlusServerFullAddress>
-	User <your_username>
-	ProxyCommand ssh -q <GatewayNodeAddress> nc %h %p
-```
-
-It would be very useful if you can access the Gateway node without password. For setting that up, do:
+It would be very useful if you can access the proxy server (or gateway node) without password. For setting that up, do:
 
 ### Create ssh key pair if you donot have it already
 ```
@@ -124,7 +125,7 @@ ssh-copy-id remote_username@GatewayNodeAddress -i path_to_creates_ssh_id_file
 This step will prompt you for password of the Gateway node. Once this step is completed,
 you should be able to ssh into the gateway node without need of password using:
 ```
-ssh remote_username@GatewayNodeAddress
+ssh remote_username@GatewayNodeAddress -p port_number
 ```
 
 ### Add gateway to ssh config for ease (Optional)
