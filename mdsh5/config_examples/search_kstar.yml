@@ -21,3 +21,4 @@ rescale:
 # the username at the start of the server address as shown below.
 # It is assumed that you have setup any required tunneling in your ~/.ssh/config
 server: guptaa@mdsr2.science.kstar.kfe.re.kr:8005
+proxy_server: cybele.gat.com

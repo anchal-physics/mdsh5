@@ -16,3 +16,4 @@ out_filename: D3D_selected_shots.txt   # File to write data output to
 # the username at the start of the server address as shown below.
 # It is assumed that you have setup any required tunneling in your ~/.ssh/config
 server: guptaa@atlas.gat.com
+proxy_server: cybele.gat.com

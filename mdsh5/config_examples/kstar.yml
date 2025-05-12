@@ -42,7 +42,7 @@ trees: # Different trees can be listed like this
 resample:                     # Can provide same info as list [-0.1, 20, 0.001]
   start: -0.1
   stop: 20
-  increment: 0.001
+  increment: 0.1
 
 # Optional:
 # To provide different dim0 scaling to ensure all output data is in same units.
@@ -58,4 +58,4 @@ reread_data: False            # Optional, if true, will re read data that is alr
 # the username at the start of the server address as shown below.
 # It is assumed that you have setup any required tunneling in your ~/.ssh/config
 server: guptaa@mdsr2.science.kstar.kfe.re.kr:8005
-verbose: true
+proxy_server: cybele.gat.com:2039

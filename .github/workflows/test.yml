@@ -1,0 +1,40 @@
+name: Test
+
+on:
+  push:
+    branches: main
+
+  pull_request:
+    branches: main
+    paths:
+      - '.github/workflows/test.yml'
+      - 'mdsh5/**'
+      - 'tests/**'
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v2
+        - name: Add SSH keys
+          uses: webfactory/ssh-agent@v0.9.0
+          with:
+            ssh-private-key: |
+              ${{ secrets.SSH_KEY }}
+        - name: Configure ssh
+          run: |
+            echo "${{ secrets.KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+        - name: Setup Python
+          uses: actions/setup-python@master
+          with:
+            python-version: 3.11.5
+            cache: pip
+        - name: Install dependencies and run tests
+          run: |
+            pip install -r requirements.txt
+            pip install -r tests/requirements.txt
+            coverage run -m pytest
+        - name: Upload coverage reports to Codecov
+          uses: codecov/codecov-action@v4.0.1
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}

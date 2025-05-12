@@ -12,7 +12,8 @@ from tqdm import tqdm
 
 def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
              resample=None, rescale=None, out_filename=None, reread_data=False,
-             force_full_data_read=False, config=None, leave_shots_tqdm=True):
+             force_full_data_read=False, config=None, leave_shots_tqdm=True,
+             proxy_server=None):
     """
     read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
              resample=None, rescale=None, out_filename=None, reread_data=False,
@@ -31,9 +32,12 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
     point_names: <str> or list(str). Default is  None. If list, then the lenght of this
            list should match length of list provided to trees arguments for one-to-one
            mapping.
-    server: <str>. MDSPlus server in the format of username@ip_address:port . Note that
-            it is assumed that your ssh configuration is setup to directly access this
-            server in case any tunneling is required.
+    server: <str>. MDSPlus server in the format of username@ip_address:port
+    proxy_server: <str>. Proxy server to use to tunnel through to the server. If
+                  provided, the username part from server definition will be used to
+                  ssh into the proxy server from where it assumed that you have access
+                  to the MDSplus server. If the username for proxy-server is different,
+                  add it as a prefix here with @. Default is None
     resample: <lenght 3 iterable like list, tuple of floats> or
               <dict(start: start_time, stop: stop_time, increment: time_step)>. If
               provided as iterable, it should be in order start, stop, increment. It is
@@ -79,6 +83,8 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             point_names = config['point_names']
         if 'server' in config and server is None:
             server = config['server']
+        if 'proxy_server' in config and proxy_server is None:
+            proxy_server = config['proxy_server']
         if 'resample' in config and resample is None:
             resample = config['resample']
         if 'rescale' in config and rescale is None:
@@ -89,13 +95,16 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             reread_data = config['reread_data']
         if 'force_full_data_read' in config and not force_full_data_read:
             force_full_data_read = config['force_full_data_read']
+    if isinstance(proxy_server, str):
+        if '@' not in proxy_server and '@' in server:
+            proxy_server = server.split('@')[0] + '@' + proxy_server
     if isinstance(shot_numbers, int) or isinstance(shot_numbers, str) or isinstance(shot_numbers, dict):
         shot_numbers = [shot_numbers]
     shot_numbers_copy = shot_numbers.copy()
     shot_numbers = []
     for shot in shot_numbers_copy:
         if isinstance(shot, dict):
-            shot_numbers += search_shots(shot, server)
+            shot_numbers += search_shots(shot, server=server, proxy_server=proxy_server)
         elif isinstance(shot, str):
             if 'to' in shot:
                 shotrange = shot.split('to')
@@ -139,7 +148,31 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
         rescale_dict = rescale
 
     try:
-        conn = mdsthin.Connection(server)
+        if isinstance(proxy_server, str):
+            s_hp = server.split(':')
+            s_host = s_hp[0]
+            if '@' in s_host:
+                s_host = s_host.split('@')[1]
+            if len(s_hp) > 1:
+                s_port = s_hp[1]
+            else:
+                s_port = None
+            ps_hp = proxy_server.split(':')
+            ps_host = ps_hp[0]
+            if len(ps_hp) > 1:
+                ps_port = ps_hp[1]
+            else:
+                ps_port = None
+            if s_port is None:
+                ps_arg = 'sshp://' + ps_host
+            else:
+                ps_arg = 'sshp://' + ps_host + ':' + s_port
+            if ps_port is None:
+                conn = mdsthin.Connection(ps_arg, sshp_host=s_host)
+            else:
+                conn = mdsthin.Connection(ps_arg, sshp_host=s_host, ssh_port=ps_port)
+        else:
+            conn = mdsthin.Connection(server)
     except BaseException:
         print_exc()
         return None
@@ -278,7 +311,7 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
     
     return data_dict
 
-def search_shots(search_config, server=None, out_filename=None):
+def search_shots(search_config, server=None, out_filename=None, proxy_server=None):
     """
     search_shots(search_config, server=None)
 
@@ -317,10 +350,14 @@ def search_shots(search_config, server=None, out_filename=None):
                            full data reading will be attempted without resampling. This
                            is useful in cases where the pointname stores time dimension
                            in other than dim0 data field. Default is False.
-    server: <str>. MDSPlus server in the format of username@ip_address:port . Note that
-            it is assumed that your ssh configuration is setup to directly access this
-            server in case any tunneling is required. If not provided, server is searched
-            in search_config dictionary.
+    server: <str>. MDSPlus server in the format of username@ip_address:port . If not
+            provided, server is searched in search_config dictionary.
+    proxy_server: <str>. Proxy server to use to tunnel through to the server. If
+                  provided, the username part from server definition will be used to
+                  ssh into the proxy server from where it assumed that you have access
+                  to the MDSplus server. If the username for proxy-server is different,
+                  add it as a prefix here with @. If not provided, server is searched
+                  in search_config dictionary and if not found defaults to None.
     out_filename: <str> Output filename for saving selected shot numbers. Default is
                   None in which case the selected shots are returned.
     
@@ -330,6 +367,8 @@ def search_shots(search_config, server=None, out_filename=None):
     shot_numbers = search_config['search_shots']
     if 'server' in search_config and server is None:
         server = search_config['server']
+    if 'proxy_server' in search_config and proxy_server is None:
+        proxy_server = search_config['proxy_server']
     if 'out_filename' in search_config and out_filename is None:
         out_filename = search_config['out_filename']
     trees = []
@@ -358,7 +397,8 @@ def search_shots(search_config, server=None, out_filename=None):
                            point_names=point_names, server=server, 
                            resample=resample, rescale=rescale,
                            force_full_data_read=force_full_data_read,
-                           leave_shots_tqdm=False)
+                           leave_shots_tqdm=False,
+                           proxy_server=proxy_server)
     selected_shots = []
     for shot in search_data:
         scope_dict = {"search_data": search_data}
@@ -476,7 +516,15 @@ def get_args():
                         help='Point name(s). Must match number of trees provided '
                              'unless a single tree is given.')
     parser.add_argument('-s', '--server', default=None,
-                        help='Server address. Default is None')
+                        help='MDSPlus server in the format of username@ip_address:port '
+                             'Default is None')
+    parser.add_argument('-x', '--proxy_server', default=None,
+                        help='Proxy server to use to tunnel through to the server. '
+                             'If provided, the username part from server definition '
+                             'will be used to ssh into the proxy server from where it '
+                             'assumed that you have access to the MDSplus server. If '
+                             'the username for proxy-server is different, add it as '
+                             'a prefix here with @. Default is None')
     parser.add_argument('-r', '--resample', nargs='+', type=float, default=None,
                         help='Resample signal(s) by providing a list of start, stop, '
                              'and increment values. For negative value, enclose them '
@@ -531,7 +579,9 @@ def read_mds_cli():
              out_filename=args.out_filename,
              reread_data=args.reread_data,
              force_full_data_read=args.force_full_data_read,
-             config=args.config,)
+             config=args.config,
+             proxy_server=args.proxy_server,
+             )
 
 if __name__ == '__main__':
     read_mds_cli()
