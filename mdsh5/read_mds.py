@@ -1,6 +1,5 @@
 import mdsthin
 from traceback import print_exc
-from collections.abc import Iterable
 import argparse
 import numpy as np
 import h5py
@@ -8,6 +7,7 @@ import yaml
 import shutil
 import os
 from tqdm import tqdm
+
 
 
 def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
@@ -194,7 +194,7 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             rescale_fac = 1
             if tree in rescale_dict:
                 rescale_fac = float(rescale_dict[tree])
-            if tree != "PTDATA":
+            if not tree.startswith("PT"):
                 try:
                     conn.openTree(tree, sn)
                 except BaseException:
@@ -207,11 +207,13 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
             for pn in pn_tqdm:
                 pn = pn.upper()
                 pn_tqdm.set_description(f"{pn} |".rjust(DW - PW) + " Pointnames".rjust(PW))
-                if tree == "PTDATA":
-                    pns = 'PTDATA("' + pn + f'", {sn})'
-                elif pn.startswith('PTDATA('):
+                # Case when the tree name is used for giving the PTDATA call function name. Ex: PTDATA, PTHEAD, PTHEAD2_ASCII etc.
+                if tree.startswith("PT"): 
+                    pns = tree + '("' + pn + f'", {sn})'
+                # Case when pointname is wrapped in PTDATA() or similar
+                elif pn.startswith('PT') and '("' in pn and '")' in pn:
                     pns = pn[:-1] + f', {sn})'
-                    pn = pn[8:-2]
+                    pn = pn.split('"')[1]
                 else:
                     pns = add_slash(pn)
                 if (not reread_data) and to_write:
@@ -405,8 +407,8 @@ def search_shots(search_config, server=None, out_filename=None, proxy_server=Non
         for var in search_config['variables']:
             tree = search_config['variables'][var]['tree']
             pn = search_config['variables'][var]['point_name']
-            if pn.startswith('PTDATA('):
-                pn = pn[8:-2]
+            if pn.startswith('PT') and '("' in pn and '")' in pn:
+                pn = pn.split('"')[1]
             expr = f"{var} = search_data[{shot}]['{tree}']['{pn.upper()}']['data']"
             exec(expr, scope_dict)
         if eval(search_config["condition"], scope_dict) == accept_on:
@@ -423,7 +425,7 @@ def add_slash(s):
     Make the name uppercase and add \\ suffix if not present already or if the name
     does not start with PTDATA.
     """
-    if s.startswith("\\") or s.startswith("PTDATA"):
+    if s.startswith("\\") or (s.startswith("PT") and '("' in s and '")' in s):
         return s.upper()
     ss = "\\" + s.upper()
     return r'' + ss.encode('unicode_escape').decode('utf-8')[1:]
