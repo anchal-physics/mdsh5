@@ -222,6 +222,8 @@ def read_mds(shot_numbers=None, trees=None, point_names=None, server=None,
                 try:
                     signal = conn.get(add_resample(pns, resample, rescale_fac))
                     data = signal.data()
+                    if len(data) and isinstance(data[0], str):  # Encode string arrays so hdf5 can handle them
+                        data = np.array([item.encode('ascii', 'ignore') for item in data])
                     if isinstance(data, str):
                         if data == 'bad resample signal in':
                             if force_full_data_read:
